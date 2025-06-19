@@ -4,6 +4,7 @@
 #include "Character/HSCharacterBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "HSCharacterControlData.h"
 
 // Sets default values
 AHSCharacterBase::AHSCharacterBase()
@@ -31,15 +32,38 @@ AHSCharacterBase::AHSCharacterBase()
     GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
     GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
 
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef = TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn'");
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn'"));
     if (CharacterMeshRef.Object)
     {
         GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
     }
 
-    static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef = TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C");
+    static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef(TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C"));
     if (AnimInstanceClassRef.Class)
     {
         GetMesh()->SetAnimInstanceClass(AnimInstanceClassRef.Class);
     }
+
+    static ConstructorHelpers::FObjectFinder<UHSCharacterControlData> ShoulderDataRef(TEXT("/Script/HackAndSlash.HSCharacterControlData'/Game/HackAndSlash/CharacterControl/HSC_Shoulder.HSC_Shoulder'"));
+    if (ShoulderDataRef.Object)
+    {
+		CharacterControlManager.Emplace(ECharacterControlType::Shoulder, ShoulderDataRef.Object);
+    }
+
+    static ConstructorHelpers::FObjectFinder<UHSCharacterControlData> QuaterDataRef(TEXT("/Script/HackAndSlash.HSCharacterControlData'/Game/HackAndSlash/CharacterControl/HSC_Quater.HSC_Quater'"));
+    if (QuaterDataRef.Object)
+    {
+		CharacterControlManager.Emplace(ECharacterControlType::Quater, QuaterDataRef.Object);
+    }
+}
+
+void AHSCharacterBase::SetCharacterControlData(const UHSCharacterControlData* CharacterControlData)
+{
+    // Pawn
+    bUseControllerRotationYaw = CharacterControlData->bUseControllerRotationYaw;
+
+    // CharacterMovement
+    GetCharacterMovement()->bOrientRotationToMovement = CharacterControlData->bOrientRotationToMovement;
+    GetCharacterMovement()->bUseControllerDesiredRotation = CharacterControlData->bUseControllerDesiredRotation;
+    GetCharacterMovement()->RotationRate = CharacterControlData->RotationRate;
 }

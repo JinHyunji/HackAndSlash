@@ -42,7 +42,7 @@ public:
 	uint32 bUsePawnControlRotation : 1;
 
 	UPROPERTY(EditAnywhere, Category = SpringArm)
-	uint32 InheritPitch : 1;
+	uint32 bInheritPitch : 1;
 
 	UPROPERTY(EditAnywhere, Category = SpringArm)
 	uint32 bInheritYaw : 1;

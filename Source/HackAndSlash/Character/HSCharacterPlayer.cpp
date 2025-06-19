@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "HSCharacterControlData.h"
 
 AHSCharacterPlayer::AHSCharacterPlayer()
 {
@@ -21,29 +22,37 @@ AHSCharacterPlayer::AHSCharacterPlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	// Input
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/HackAndSlash/Input/IMC_Default.IMC_Default'"));
-	if (InputMappingContextRef.Object)
-	{
-		DefaultMappingContext = InputMappingContextRef.Object;
-	}
-
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputJumpActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_Jump.IA_Jump'"));
 	if (InputJumpActionRef.Object)
 	{
 		JumpAction = InputJumpActionRef.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputMoveActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_Move.IA_Move'"));
-	if (InputMoveActionRef.Object)
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputChangeControlActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_ChangeControl.IA_ChangeControl'"));
+	if (InputChangeControlActionRef.Object)
 	{
-		MoveAction = InputMoveActionRef.Object;
+		ChangeControlAction = InputChangeControlActionRef.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputLookActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_Look.IA_Look'"));
-	if (InputLookActionRef.Object)
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputShoulderMoveActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_ShoulderMove.IA_ShoulderMove'"));
+	if (InputShoulderMoveActionRef.Object)
 	{
-		LookAction = InputLookActionRef.Object;
+		ShoulderMoveAction = InputShoulderMoveActionRef.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputShoulderLookActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_ShoulderLook.IA_ShoulderLook'"));
+	if (InputShoulderLookActionRef.Object)
+	{
+		ShoulderLookAction = InputShoulderLookActionRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputQuaterMoveActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_QuaterMove.IA_QuaterMove'"));
+	if (InputQuaterMoveActionRef.Object)
+	{
+		QuaterMoveAction = InputQuaterMoveActionRef.Object;
+	}
+
+	CurrentCharacterControlType = ECharacterControlType::Quater;
 }
 
 void AHSCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -54,22 +63,20 @@ void AHSCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::Move);
-	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::Look);
+	EnhancedInputComponent->BindAction(ChangeControlAction, ETriggerEvent::Started, this, &AHSCharacterPlayer::ChangeCharacterControl);
+	EnhancedInputComponent->BindAction(ShoulderMoveAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::ShoulderMove);
+	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::ShoulderLook);
+	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::QuaterMove);
 }
 
 void AHSCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 0);
-	}
+	SetCharacterControl(CurrentCharacterControlType);
 }
 
-void AHSCharacterPlayer::Move(const FInputActionValue& Value)
+void AHSCharacterPlayer::ShoulderMove(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -83,11 +90,81 @@ void AHSCharacterPlayer::Move(const FInputActionValue& Value)
 	AddMovementInput(RightDirection, MovementVector.Y);
 }
 
-void AHSCharacterPlayer::Look(const FInputActionValue& Value)
+void AHSCharacterPlayer::ShoulderLook(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	// 입력값으로 컨트롤러의 Control Rotation 속성 업데이트
 	AddControllerYawInput(LookAxisVector.X); 
 	AddControllerPitchInput(LookAxisVector.Y);
+}
+
+void AHSCharacterPlayer::QuaterMove(const FInputActionValue& Value)
+{
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	float InputSizeSquared = MovementVector.SquaredLength();
+	float MovementVectorSize = 1.f;
+	float MovementVectorSizeSquared = MovementVector.SquaredLength();
+	
+	if (MovementVectorSizeSquared > 1.f)
+	{
+		MovementVector.Normalize();
+		MovementVectorSizeSquared = 1.f;
+	}
+	else
+	{
+		MovementVectorSize = FMath::Sqrt(MovementVectorSizeSquared);
+	}
+
+	FVector MoveDirection = FVector(MovementVector.X, MovementVector.Y, 0.f);
+	GetController()->SetControlRotation(FRotationMatrix::MakeFromX(MoveDirection).Rotator());
+	AddMovementInput(MoveDirection, MovementVectorSize);
+}
+
+void AHSCharacterPlayer::ChangeCharacterControl()
+{
+	if (CurrentCharacterControlType == ECharacterControlType::Quater)
+	{
+		SetCharacterControl(ECharacterControlType::Shoulder);
+	}
+	else if (CurrentCharacterControlType == ECharacterControlType::Shoulder)
+	{
+		SetCharacterControl(ECharacterControlType::Quater);
+	}
+}
+
+void AHSCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
+{
+	UHSCharacterControlData* NewCharacterControl = CharacterControlManager[NewCharacterControlType];
+	check(NewCharacterControl);
+
+	SetCharacterControlData(NewCharacterControl);
+
+	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+	{
+		Subsystem->ClearAllMappings();
+		UInputMappingContext* NewMappingContext = NewCharacterControl->InputMappingContext;
+		if (NewMappingContext)
+		{
+			Subsystem->AddMappingContext(NewMappingContext, 0);
+		}
+	}
+
+	CurrentCharacterControlType = NewCharacterControlType;
+}
+
+void AHSCharacterPlayer::SetCharacterControlData(const class UHSCharacterControlData* CharacterControlData)
+{
+	Super::SetCharacterControlData(CharacterControlData);
+
+	// Camera
+	CameraBoom->TargetArmLength = CharacterControlData->TargetArmLength;
+	CameraBoom->SetRelativeRotation(CharacterControlData->RelativeRotation);
+	CameraBoom->bUsePawnControlRotation = CharacterControlData->bUsePawnControlRotation;
+	CameraBoom->bInheritPitch = CharacterControlData->bInheritPitch;
+	CameraBoom->bInheritYaw = CharacterControlData->bInheritYaw;
+	CameraBoom->bInheritRoll = CharacterControlData->bInheritRoll;
+	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
 }
