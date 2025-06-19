@@ -1,0 +1,16 @@
+# 1. 모든 파일과 폴더 무시
+*
+
+# 2. 예외: .gitignore 자체는 추적
+!.gitignore
+
+# 3. 예외: README.md 파일 추적
+!README.md
+
+# 4. 예외: Config 폴더 및 내부 모든 파일 추적
+!Config/
+!Config/**
+
+# 5. 예외: Source 폴더 및 내부 모든 파일 추적
+!Source/
+!Source/**
