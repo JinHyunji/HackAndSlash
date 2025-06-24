@@ -8,6 +8,7 @@
 #include "Animation/AnimMontage.h"
 #include "HSComboActionData.h"
 #include "Physics/HSCollision.h"
+#include "Engine/DamageEvents.h"
 
 // Sets default values
 AHSCharacterBase::AHSCharacterBase()
@@ -18,8 +19,8 @@ AHSCharacterBase::AHSCharacterBase()
     bUseControllerRotationYaw = false; // Z
 
     // Capsule
-    GetCapsuleComponent()->InitCapsuleSize(25.f, 100.f);
-    GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
+    GetCapsuleComponent()->InitCapsuleSize(50.f, 100.f);
+    GetCapsuleComponent()->SetCollisionProfileName(CPROFILE_HSCAPSULE);
 
     // Movement
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -31,9 +32,9 @@ AHSCharacterBase::AHSCharacterBase()
     GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
     // Mesh
-    GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 10.f, -100.f), FRotator(0.f, -90.f, 0.f));
+    GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -100.f), FRotator(0.f, -90.f, 0.f));
     GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-    GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+    GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/ParagonKwang/Characters/Heroes/Kwang/Meshes/Kwang_GDC.Kwang_GDC'"));
     if (CharacterMeshRef.Object)
@@ -57,6 +58,24 @@ AHSCharacterBase::AHSCharacterBase()
     if (QuaterDataRef.Object)
     {
 		CharacterControlManager.Emplace(ECharacterControlType::Quater, QuaterDataRef.Object);
+    }
+
+    static ConstructorHelpers::FObjectFinder<UAnimMontage> ComboActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animations/AM_ComboAttack.AM_ComboAttack'"));
+    if (ComboActionMontageRef.Object)
+    {
+        ComboActionMontage = ComboActionMontageRef.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UHSComboActionData> ComboActionDataRef(TEXT("/Script/HackAndSlash.HSComboActionData'/Game/HackAndSlash/CharacterAction/HSA_ComboAttack.HSA_ComboAttack'"));
+    if (ComboActionDataRef.Object)
+    {
+        ComboActionData = ComboActionDataRef.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animations/AM_Dead.AM_Dead'"));
+    if (DeadMontageRef.Object)
+    {
+        DeadMontage = DeadMontageRef.Object;
     }
 }
 
@@ -160,15 +179,39 @@ void AHSCharacterBase::AttackHitCheck()
     bool HitDetected = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, CCHANNEL_HSACTION, FCollisionShape::MakeSphere(AttackRadius), Params);
     if (HitDetected)
     {
-
+        FDamageEvent DamageEvent;
+        OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
     }
 
 #if ENABLE_DRAW_DEBUG
 
     FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
-    float CapsuleHalfHeight = AttackRange * 0.5f;
+    float CapsuleHalfHeight = AttackRange * 0.5f + AttackRadius;
     FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
 
     DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.f);
 #endif
+}
+
+float AHSCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+    Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+    SetDead();
+
+    return DamageAmount;
+}
+
+void AHSCharacterBase::SetDead()
+{
+    GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+    PlayDeadAnimation();
+    SetActorEnableCollision(false);
+}
+
+void AHSCharacterBase::PlayDeadAnimation()
+{
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    AnimInstance->StopAllMontages(0.f);
+    AnimInstance->Montage_Play(DeadMontage, 1.f);
 }

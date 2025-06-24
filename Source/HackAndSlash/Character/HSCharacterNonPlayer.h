@@ -14,4 +14,9 @@ class HACKANDSLASH_API AHSCharacterNonPlayer : public AHSCharacterBase
 {
 	GENERATED_BODY()
 	
+public:
+	AHSCharacterNonPlayer();
+
+protected:
+	virtual void SetDead() override;
 };

@@ -51,5 +51,15 @@ protected:
 
 	// Attack Hit Section
 	virtual void AttackHitCheck() override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+
+	// Dead Section
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Dead, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAnimMontage> DeadMontage;
+
+	virtual void SetDead();
+	void PlayDeadAnimation();
+
+	float DeadEventDelayTime = 5.f;
 };
