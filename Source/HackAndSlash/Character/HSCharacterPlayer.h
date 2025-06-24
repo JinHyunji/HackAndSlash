@@ -32,7 +32,7 @@ protected:
 
 
 	// Input Section
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
@@ -50,6 +50,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> QuaterMoveAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> AttackAction;
+
 	void ShoulderMove(const FInputActionValue& Value); // 구조체를 인자로 받음 (헤더 선언)
 	void ShoulderLook(const FInputActionValue& Value);
 
@@ -57,7 +60,7 @@ protected:
 
 	ECharacterControlType CurrentCharacterControlType;
 
-
+	void Attack();
 
 	// CharacterControl Section
 	void ChangeCharacterControl();

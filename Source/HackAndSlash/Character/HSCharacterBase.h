@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Interface/HSAnimationAttackInterface.h"
+
 #include "HSCharacterBase.generated.h"
 
 UENUM()
@@ -14,7 +16,7 @@ enum class ECharacterControlType : uint8
 };
 
 UCLASS()
-class HACKANDSLASH_API AHSCharacterBase : public ACharacter
+class HACKANDSLASH_API AHSCharacterBase : public ACharacter, public IHSAnimationAttackInterface
 {
 	GENERATED_BODY()
 
@@ -27,4 +29,27 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
 	TMap<ECharacterControlType, class UHSCharacterControlData*> CharacterControlManager;
+
+	// Combo Action Section
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> ComboActionMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UHSComboActionData> ComboActionData;
+
+	void ProcessComboCommand();
+
+	void ComboActionBegin();
+	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+	void SetComboCheckTimer();
+	void ComboCheck();
+
+	int32 CurrentCombo = 0; // 1, 2, 3, 4, 5
+	FTimerHandle ComboTimerHandle;
+	bool HasNextComboCommand = false;
+
+
+	// Attack Hit Section
+	virtual void AttackHitCheck() override;
+
 };

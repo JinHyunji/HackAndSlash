@@ -52,6 +52,12 @@ AHSCharacterPlayer::AHSCharacterPlayer()
 		QuaterMoveAction = InputQuaterMoveActionRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputAttackActionRef(TEXT("/Script/EnhancedInput.InputAction'/Game/HackAndSlash/Input/Actions/IA_Attack.IA_Attack'"));
+	if (InputAttackActionRef.Object)
+	{
+		AttackAction = InputAttackActionRef.Object;
+	}
+
 	CurrentCharacterControlType = ECharacterControlType::Quater;
 }
 
@@ -67,6 +73,7 @@ void AHSCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 	EnhancedInputComponent->BindAction(ShoulderMoveAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::ShoulderMove);
 	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::ShoulderLook);
 	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::QuaterMove);
+	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AHSCharacterPlayer::Attack);
 }
 
 void AHSCharacterPlayer::BeginPlay()
@@ -120,6 +127,11 @@ void AHSCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 	FVector MoveDirection = FVector(MovementVector.X, MovementVector.Y, 0.f);
 	GetController()->SetControlRotation(FRotationMatrix::MakeFromX(MoveDirection).Rotator());
 	AddMovementInput(MoveDirection, MovementVectorSize);
+}
+
+void AHSCharacterPlayer::Attack()
+{
+	ProcessComboCommand();
 }
 
 void AHSCharacterPlayer::ChangeCharacterControl()
