@@ -5,8 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interface/HSAnimationAttackInterface.h"
+#include "Interface/HSCharacterWidgetInterface.h"
+#include "Interface/HSCharacterItemInterface.h"
 
 #include "HSCharacterBase.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogHSCharacter, Log, All);
 
 UENUM()
 enum class ECharacterControlType : uint8
@@ -15,14 +19,26 @@ enum class ECharacterControlType : uint8
 	Quater
 };
 
+DECLARE_DELEGATE_OneParam(FOnTakeItemDelegate, class UHSItemData* /* InItemData */);
+USTRUCT(BlueprintType)
+struct FTakeItemDelegateWrapper
+{
+	GENERATED_BODY()
+	FTakeItemDelegateWrapper() {}
+	FTakeItemDelegateWrapper(const FOnTakeItemDelegate& InItemDelegate) : ItemDelegate(InItemDelegate) {}
+	FOnTakeItemDelegate ItemDelegate;
+};
+
 UCLASS()
-class HACKANDSLASH_API AHSCharacterBase : public ACharacter, public IHSAnimationAttackInterface
+class HACKANDSLASH_API AHSCharacterBase : public ACharacter, public IHSAnimationAttackInterface, public IHSCharacterWidgetInterface, public IHSCharacterItemInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
 	AHSCharacterBase();
+
+	virtual void PostInitializeComponents() override;
 
 protected:
 	virtual void SetCharacterControlData(const class UHSCharacterControlData* CharacterControlData);
@@ -62,4 +78,32 @@ protected:
 	void PlayDeadAnimation();
 
 	float DeadEventDelayTime = 5.f;
+
+
+	// Stat Section
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UHSCharacterStatComponent> Stat;
+
+
+	// UI Section
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UHSWidgetComponent> HpBar;
+
+	virtual void SetupCharacterWidget(class UHSUserWidget* InUserWidget) override;
+
+
+	// Item Section
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USkeletalMeshComponent> Weapon;
+
+	UPROPERTY()
+	TArray<FTakeItemDelegateWrapper> TakeItemActions;
+
+	virtual void TakeItem(class UHSItemData* InItemData) override;
+	virtual void DrinkPotion(class UHSItemData* InItemData);
+	virtual void EquipWeapon(class UHSItemData* InItemData);
+	virtual void ReadScroll(class UHSItemData* InItemData);
+
+
+
 };

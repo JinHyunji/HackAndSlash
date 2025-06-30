@@ -9,6 +9,13 @@
 #include "HSComboActionData.h"
 #include "Physics/HSCollision.h"
 #include "Engine/DamageEvents.h"
+#include "CharacterStat/HSCharacterStatComponent.h"
+#include "UI/HSWidgetComponent.h"
+#include "UI/HSHpBarWidget.h"
+#include "Item/HSWeaponItemData.h"
+#include "Components/SkeletalMeshComponent.h"
+
+DEFINE_LOG_CATEGORY(LogHSCharacter);
 
 // Sets default values
 AHSCharacterBase::AHSCharacterBase()
@@ -36,7 +43,7 @@ AHSCharacterBase::AHSCharacterBase()
     GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
     GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/ParagonKwang/Characters/Heroes/Kwang/Meshes/Kwang_GDC.Kwang_GDC'"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Warrior.SK_CharM_Warrior'"));
     if (CharacterMeshRef.Object)
     {
         GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
@@ -60,7 +67,7 @@ AHSCharacterBase::AHSCharacterBase()
 		CharacterControlManager.Emplace(ECharacterControlType::Quater, QuaterDataRef.Object);
     }
 
-    static ConstructorHelpers::FObjectFinder<UAnimMontage> ComboActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animations/AM_ComboAttack.AM_ComboAttack'"));
+    static ConstructorHelpers::FObjectFinder<UAnimMontage> ComboActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animation/AM_ComboAttack.AM_ComboAttack'"));
     if (ComboActionMontageRef.Object)
     {
         ComboActionMontage = ComboActionMontageRef.Object;
@@ -72,11 +79,42 @@ AHSCharacterBase::AHSCharacterBase()
         ComboActionData = ComboActionDataRef.Object;
     }
 
-    static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animations/AM_Dead.AM_Dead'"));
+    static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/HackAndSlash/Animation/AM_Dead.AM_Dead'"));
     if (DeadMontageRef.Object)
     {
         DeadMontage = DeadMontageRef.Object;
     }
+
+    // Stat Component
+    Stat = CreateDefaultSubobject<UHSCharacterStatComponent>(TEXT("Stat"));
+
+    // Widget Component
+    HpBar = CreateDefaultSubobject<UHSWidgetComponent>(TEXT("Widget"));
+    HpBar->SetupAttachment(GetMesh());
+    HpBar->SetRelativeLocation(FVector(0.f, 0.f, 180.f));
+    static ConstructorHelpers::FClassFinder<UUserWidget> HpBarWidgetRef(TEXT("/Game/HackAndSlash/UI/WBP_HpBar.WBP_HpBar_C"));
+    if (HpBarWidgetRef.Class)
+    {
+        HpBar->SetWidgetClass(HpBarWidgetRef.Class);
+        HpBar->SetWidgetSpace(EWidgetSpace::Screen);
+        HpBar->SetDrawSize(FVector2D(150.f, 15.f));
+        HpBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // Item Actions
+    TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AHSCharacterBase::EquipWeapon)));
+    TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AHSCharacterBase::DrinkPotion)));
+    TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AHSCharacterBase::ReadScroll)));
+
+    Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
+    Weapon->SetupAttachment(GetMesh(), TEXT("hand_rSocket"));
+}
+
+void AHSCharacterBase::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+
+    Stat->OnHpZero.AddUObject(this, &AHSCharacterBase::SetDead);
 }
 
 void AHSCharacterBase::SetCharacterControlData(const UHSCharacterControlData* CharacterControlData)
@@ -197,7 +235,7 @@ float AHSCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const
 {
     Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-    SetDead();
+    Stat->ApplyDamage(DamageAmount);
 
     return DamageAmount;
 }
@@ -207,11 +245,60 @@ void AHSCharacterBase::SetDead()
     GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
     PlayDeadAnimation();
     SetActorEnableCollision(false);
+    HpBar->SetHiddenInGame(true);
 }
 
 void AHSCharacterBase::PlayDeadAnimation()
 {
     UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-    AnimInstance->StopAllMontages(0.f);
-    AnimInstance->Montage_Play(DeadMontage, 1.f);
+    if (AnimInstance)
+    {
+		AnimInstance->StopAllMontages(0.f);
+		AnimInstance->Montage_Play(DeadMontage, 1.f);
+    }
+
+}
+
+void AHSCharacterBase::SetupCharacterWidget(UHSUserWidget* InUserWidget)
+{
+    UHSHpBarWidget* HpBarWidget = Cast<UHSHpBarWidget>(InUserWidget);
+    if (HpBarWidget)
+    {
+        HpBarWidget->SetMaxHp(Stat->GetMaxHp());
+        HpBarWidget->UpdateHpBar(Stat->GetCurrentHp());
+        Stat->OnHpChanged.AddUObject(HpBarWidget, &UHSHpBarWidget::UpdateHpBar);
+    }
+}
+
+void AHSCharacterBase::TakeItem(UHSItemData* InItemData)
+{
+    if (InItemData)
+    {
+        TakeItemActions[(uint8)InItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
+    }
+
+}
+
+void AHSCharacterBase::DrinkPotion(UHSItemData* InItemData)
+{
+    UE_LOG(LogHSCharacter, Log, TEXT("Drink Potion"));
+}
+
+void AHSCharacterBase::EquipWeapon(UHSItemData* InItemData)
+{
+    UHSWeaponItemData* WeaponItemData = Cast<UHSWeaponItemData>(InItemData);
+
+    if (WeaponItemData)
+    {
+        if (WeaponItemData->WeaponMesh.IsPending())
+        {
+            WeaponItemData->WeaponMesh.LoadSynchronous();
+        }
+		Weapon->SetSkeletalMesh(WeaponItemData->WeaponMesh.Get());
+    }
+}
+
+void AHSCharacterBase::ReadScroll(UHSItemData* InItemData)
+{
+    UE_LOG(LogHSCharacter, Log, TEXT("Read Scroll"));
 }
