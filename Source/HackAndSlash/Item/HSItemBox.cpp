@@ -9,6 +9,8 @@
 #include "NiagaraSystem.h"
 #include "Physics/HSCollision.h"
 #include "Interface/HSCharacterItemInterface.h"
+#include "Engine/AssetManager.h"
+#include "HSItemData.h"
 
 // Sets default values
 AHSItemBox::AHSItemBox()
@@ -23,7 +25,6 @@ AHSItemBox::AHSItemBox()
 
     Trigger->SetCollisionProfileName(CPROFILE_HSTRIGGER);
     Trigger->SetBoxExtent(FVector(40.f, 42.f, 30.f));
-    Trigger->OnComponentBeginOverlap.AddDynamic(this, &AHSItemBox::OnOverlapBegin);
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BoxMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/HackAndSlash/Environment/Props/SM_Env_Breakables_Box1.SM_Env_Breakables_Box1'"));
     if (BoxMeshRef.Object)
@@ -39,6 +40,28 @@ AHSItemBox::AHSItemBox()
         Effect->SetAsset(EffectRef.Object);
         Effect->bAutoActivate = false;
     }
+}
+
+void AHSItemBox::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+
+    UAssetManager& Manager = UAssetManager::Get();
+
+    TArray<FPrimaryAssetId> Assets;
+    Manager.GetPrimaryAssetIdList(TEXT("HSItemData"), Assets);
+    ensure(0 < Assets.Num());
+
+    int32 RandomIndex = FMath::RandRange(0, Assets.Num() - 1);
+    FSoftObjectPtr AssetPtr(Manager.GetPrimaryAssetPath(Assets[RandomIndex]));
+    if (AssetPtr.IsPending())
+    {
+        AssetPtr.LoadSynchronous();
+    }
+    Item = Cast<UHSItemData>(AssetPtr.Get());
+    ensure(Item);
+
+    Trigger->OnComponentBeginOverlap.AddDynamic(this, &AHSItemBox::OnOverlapBegin);
 }
 
 void AHSItemBox::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult)

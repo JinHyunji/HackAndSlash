@@ -4,6 +4,7 @@
 #include "UI/HSHpBarWidget.h"
 #include "Components/ProgressBar.h"
 #include "Interface/HSCharacterWidgetInterface.h"
+#include "HSHUDWidget.h"
 
 UHSHpBarWidget::UHSHpBarWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

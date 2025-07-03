@@ -2,12 +2,22 @@
 
 
 #include "CharacterStat/HSCharacterStatComponent.h"
+#include "GameData/HSGameSingleton.h"
 
 // Sets default values for this component's properties
 UHSCharacterStatComponent::UHSCharacterStatComponent()
 {
-	MaxHp = 200.f;
-	SetHp(MaxHp);
+	CurrentLevel = 1;
+	AttackRadius = 50.f;
+
+	bWantsInitializeComponent = true; // 이 변수를 true로 설정해야 InitializeComponent() 호출됨
+}
+
+void UHSCharacterStatComponent::SetLevelStat(int32 InNewLevel)
+{
+	CurrentLevel = FMath::Clamp(InNewLevel, 1, UHSGameSingleton::Get().CharacterMaxLevel);
+	SetBaseStat(UHSGameSingleton::Get().GetCharacterStat(CurrentLevel));
+	check(BaseStat.MaxHp > 0.f);
 }
 
 float UHSCharacterStatComponent::ApplyDamage(float InDamage)
@@ -25,17 +35,17 @@ float UHSCharacterStatComponent::ApplyDamage(float InDamage)
 	return ActualDamage;
 }
 
-// Called when the game starts
-void UHSCharacterStatComponent::BeginPlay()
+void UHSCharacterStatComponent::InitializeComponent()
 {
-	Super::BeginPlay();
+	Super::InitializeComponent();
 
-	CurrentHp = MaxHp;
+	SetLevelStat(CurrentLevel);
+	SetHp(BaseStat.MaxHp);
 }
 
 void UHSCharacterStatComponent::SetHp(float NewHp)
 {
-	CurrentHp = FMath::Clamp<float>(NewHp, 0.f, MaxHp);
+	CurrentHp = FMath::Clamp<float>(NewHp, 0.f, BaseStat.MaxHp);
 
 	OnHpChanged.Broadcast(CurrentHp);
 }

@@ -49,7 +49,7 @@ AHSCharacterBase::AHSCharacterBase()
         GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
     }
 
-    static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef(TEXT("/Game/HackAndSlash/Animations/ABP_HSCharacter.ABP_HSCharacter_C"));
+    static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef(TEXT("/Game/HackAndSlash/Animation/ABP_HSCharacter.ABP_HSCharacter_C"));
     if (AnimInstanceClassRef.Class)
     {
         GetMesh()->SetAnimInstanceClass(AnimInstanceClassRef.Class);
@@ -155,7 +155,7 @@ void AHSCharacterBase::ComboActionBegin()
     GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
     // Animation Setting
-    const float AttackSpeedRate = 1.f;
+    const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
     UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
     AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 
@@ -172,6 +172,12 @@ void AHSCharacterBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProper
     ensure(CurrentCombo != 0);
     CurrentCombo = 0;
     GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+    NotifyComboActionEnd();
+}
+
+void AHSCharacterBase::NotifyComboActionEnd()
+{
 }
 
 void AHSCharacterBase::SetComboCheckTimer()
@@ -179,7 +185,7 @@ void AHSCharacterBase::SetComboCheckTimer()
     int32 ComboIndex = CurrentCombo - 1;
     ensure(ComboActionData->EffectiveFrameCount.IsValidIndex(ComboIndex));
 
-    const float AttackSpeedRate = 1.f;
+    const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
     float ComboEffectiveTime = (ComboActionData->EffectiveFrameCount[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
     if (ComboEffectiveTime > 0.f)
     {
@@ -208,9 +214,9 @@ void AHSCharacterBase::AttackHitCheck()
     FHitResult OutHitResult;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), false, this); // 콜리전 분석 시 식별자 정보, 복잡한 형태의 충돌체도 감지할 것인지 옵션, 무시할 액터들(자기자신만 무시하면 됨)
 
-    const float AttackRange = 40.f;
-    const float AttackRadius = 50.f;
-    const float AttackDamage = 30.f;
+    const float AttackRange = Stat->GetTotalStat().AttackRange;
+    const float AttackRadius = Stat->GetAttackRadius();
+    const float AttackDamage = Stat->GetTotalStat().Attack;
     const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
     const FVector End = Start + GetActorForwardVector() * AttackRange;
 
@@ -264,7 +270,7 @@ void AHSCharacterBase::SetupCharacterWidget(UHSUserWidget* InUserWidget)
     UHSHpBarWidget* HpBarWidget = Cast<UHSHpBarWidget>(InUserWidget);
     if (HpBarWidget)
     {
-        HpBarWidget->SetMaxHp(Stat->GetMaxHp());
+        HpBarWidget->SetMaxHp(Stat->GetTotalStat().MaxHp);
         HpBarWidget->UpdateHpBar(Stat->GetCurrentHp());
         Stat->OnHpChanged.AddUObject(HpBarWidget, &UHSHpBarWidget::UpdateHpBar);
     }
@@ -295,10 +301,21 @@ void AHSCharacterBase::EquipWeapon(UHSItemData* InItemData)
             WeaponItemData->WeaponMesh.LoadSynchronous();
         }
 		Weapon->SetSkeletalMesh(WeaponItemData->WeaponMesh.Get());
+        Stat->SetModifierStat(WeaponItemData->ModifierStat);
     }
 }
 
 void AHSCharacterBase::ReadScroll(UHSItemData* InItemData)
 {
     UE_LOG(LogHSCharacter, Log, TEXT("Read Scroll"));
+}
+
+int32 AHSCharacterBase::GetLevel()
+{
+    return Stat->GetCurrentLevel();
+}
+
+void AHSCharacterBase::SetLevel(int32 InNewLevel)
+{
+    Stat->SetLevelStat(InNewLevel);
 }

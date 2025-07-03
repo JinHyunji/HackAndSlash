@@ -15,5 +15,17 @@ class HACKANDSLASH_API AHSPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
+	AHSPlayerController();
+
+protected:
 	virtual void BeginPlay() override;
+
+// HUD Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UHSHUDWidget> HSHUDWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = HUD)
+	TObjectPtr<class UHSHUDWidget> HSHUDWidget;
+
 };

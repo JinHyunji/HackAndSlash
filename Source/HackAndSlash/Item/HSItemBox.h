@@ -14,6 +14,11 @@ class HACKANDSLASH_API AHSItemBox : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AHSItemBox();
+
+	TObjectPtr<class UBoxComponent> GetTrigger() { return Trigger; }
+
+protected:
+	virtual void PostInitializeComponents() override;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Box)

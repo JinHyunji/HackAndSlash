@@ -23,6 +23,12 @@ class HACKANDSLASH_API UHSItemData : public UPrimaryDataAsset
 	GENERATED_BODY()
 	
 public:
+	FPrimaryAssetId GetPrimaryAssetId() const override
+	{
+		return FPrimaryAssetId("HSItemData", GetFName());
+	}
+
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
 	EItemType Type;
 };

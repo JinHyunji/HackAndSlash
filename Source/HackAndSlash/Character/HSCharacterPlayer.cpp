@@ -8,6 +8,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "HSCharacterControlData.h"
+#include "UI/HSHUDWidget.h"
+#include "CharacterStat/HSCharacterStatComponent.h"
 
 AHSCharacterPlayer::AHSCharacterPlayer()
 {
@@ -179,4 +181,16 @@ void AHSCharacterPlayer::SetCharacterControlData(const class UHSCharacterControl
 	CameraBoom->bInheritYaw = CharacterControlData->bInheritYaw;
 	CameraBoom->bInheritRoll = CharacterControlData->bInheritRoll;
 	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
+}
+
+void AHSCharacterPlayer::SetupHUDWidget(UHSHUDWidget* InHUDWidget)
+{
+	if (InHUDWidget)
+	{
+		InHUDWidget->UpdateStat(Stat->GetBaseStat(), Stat->GetModifierStat());
+		InHUDWidget->UpdateHpBar(Stat->GetCurrentHp());
+
+		Stat->OnStatChanged.AddUObject(InHUDWidget, &UHSHUDWidget::UpdateStat);
+		Stat->OnHpChanged.AddUObject(InHUDWidget, &UHSHUDWidget::UpdateHpBar);
+	}
 }

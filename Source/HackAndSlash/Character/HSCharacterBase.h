@@ -40,6 +40,10 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
+	// Stat Section
+	int32 GetLevel();
+	void SetLevel(int32 InNewLevel);
+
 protected:
 	virtual void SetCharacterControlData(const class UHSCharacterControlData* CharacterControlData);
 
@@ -57,6 +61,7 @@ protected:
 
 	void ComboActionBegin();
 	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+	virtual void NotifyComboActionEnd();
 	void SetComboCheckTimer();
 	void ComboCheck();
 

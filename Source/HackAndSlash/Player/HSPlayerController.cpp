@@ -2,6 +2,16 @@
 
 
 #include "Player/HSPlayerController.h"
+#include "UI/HSHUDWidget.h"
+
+AHSPlayerController::AHSPlayerController()
+{
+	static ConstructorHelpers::FClassFinder<UHSHUDWidget> HSHUDWidgetRef(TEXT("/Game/HackAndSlash/UI/WBP_HSHUD.WBP_HSHUD_C"));
+	if (HSHUDWidgetRef.Class)
+	{
+		HSHUDWidgetClass = HSHUDWidgetRef.Class;
+	}
+}
 
 void AHSPlayerController::BeginPlay()
 {
@@ -11,4 +21,10 @@ void AHSPlayerController::BeginPlay()
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
 	// ======================================
+
+	HSHUDWidget = CreateWidget<UHSHUDWidget>(this, HSHUDWidgetClass);
+	if (HSHUDWidget)
+	{
+		HSHUDWidget->AddToViewport();
+	}
 }

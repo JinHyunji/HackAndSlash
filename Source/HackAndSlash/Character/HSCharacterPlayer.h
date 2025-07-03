@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "Character/HSCharacterBase.h"
 #include "InputActionValue.h"
+#include "Interface/HSCharacterHUDInterface.h"
 #include "HSCharacterPlayer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class HACKANDSLASH_API AHSCharacterPlayer : public AHSCharacterBase
+class HACKANDSLASH_API AHSCharacterPlayer : public AHSCharacterBase, public IHSCharacterHUDInterface
 {
 	GENERATED_BODY()
 	
@@ -66,5 +67,9 @@ protected:
 	void ChangeCharacterControl();
 	void SetCharacterControl(ECharacterControlType NewCharacterControlType);
 	virtual void SetCharacterControlData(const class UHSCharacterControlData* CharacterControlData) override;
+
+
+	// UI Section
+	virtual void SetupHUDWidget(class UHSHUDWidget* InHUDWidget) override;
 
 };
