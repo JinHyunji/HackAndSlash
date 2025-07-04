@@ -10,6 +10,8 @@
 #include "HSCharacterControlData.h"
 #include "UI/HSHUDWidget.h"
 #include "CharacterStat/HSCharacterStatComponent.h"
+#include "Interface/HSGameInterface.h"
+#include "GameFramework/GameModeBase.h"
 
 AHSCharacterPlayer::AHSCharacterPlayer()
 {
@@ -82,7 +84,30 @@ void AHSCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		EnableInput(PlayerController);
+	}
+
 	SetCharacterControl(CurrentCharacterControlType);
+}
+
+void AHSCharacterPlayer::SetDead()
+{
+	Super::SetDead();
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		DisableInput(PlayerController);
+
+		IHSGameInterface* HSGameMode = Cast<IHSGameInterface>(GetWorld()->GetAuthGameMode());
+		if (HSGameMode)
+		{
+			HSGameMode->OnPlayerDead();
+		}
+	}
 }
 
 void AHSCharacterPlayer::ShoulderMove(const FInputActionValue& Value)

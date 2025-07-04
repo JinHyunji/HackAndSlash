@@ -7,6 +7,7 @@
 #include "Interface/HSAnimationAttackInterface.h"
 #include "Interface/HSCharacterWidgetInterface.h"
 #include "Interface/HSCharacterItemInterface.h"
+#include "GameData/HSCharacterStat.h"
 
 #include "HSCharacterBase.generated.h"
 
@@ -43,6 +44,7 @@ public:
 	// Stat Section
 	int32 GetLevel();
 	void SetLevel(int32 InNewLevel);
+	void ApplyStat(const FHSCharacterStat& BaseStat, const FHSCharacterStat& ModifierStat);
 
 protected:
 	virtual void SetCharacterControlData(const class UHSCharacterControlData* CharacterControlData);

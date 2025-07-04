@@ -3,6 +3,7 @@
 
 #include "UI/HSHpBarWidget.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 #include "Interface/HSCharacterWidgetInterface.h"
 #include "HSHUDWidget.h"
 
@@ -19,6 +20,9 @@ void UHSHpBarWidget::NativeConstruct()
 	HpProgressBar = Cast<UProgressBar>(GetWidgetFromName(TEXT("PbHpBar")));
 	ensure(HpProgressBar);
 
+	HpStat = Cast<UTextBlock>(GetWidgetFromName(TEXT("TxtHpStat")));
+	ensure(HpStat);
+
 	IHSCharacterWidgetInterface* CharacterWidget = Cast<IHSCharacterWidgetInterface>(OwningActor);
 	if (CharacterWidget)
 	{
@@ -26,12 +30,38 @@ void UHSHpBarWidget::NativeConstruct()
 	}
 }
 
+void UHSHpBarWidget::UpdateStat(const FHSCharacterStat& BaseStat, const FHSCharacterStat& ModifierStat)
+{
+	MaxHp = (BaseStat + ModifierStat).MaxHp;
+
+	if (HpProgressBar)
+	{
+		HpProgressBar->SetPercent(CurrentHp / MaxHp);
+	}
+
+	if (HpStat)
+	{
+		HpStat->SetText(FText::FromString(GetHpStatText()));
+	}
+}
+
 void UHSHpBarWidget::UpdateHpBar(float NewCurrentHp)
 {
+	CurrentHp = NewCurrentHp;
+
 	ensure(MaxHp > 0.f);
 	if (HpProgressBar)
 	{
-		HpProgressBar->SetPercent(NewCurrentHp / MaxHp);
+		HpProgressBar->SetPercent(CurrentHp / MaxHp);
 	}
 
+	if (HpStat)
+	{
+		HpStat->SetText(FText::FromString(GetHpStatText()));
+	}
+}
+
+FString UHSHpBarWidget::GetHpStatText()
+{
+	return FString::Printf(TEXT("%.0f / %.0f"), CurrentHp, MaxHp);
 }

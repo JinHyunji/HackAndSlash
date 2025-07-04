@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "HSPlayerController.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogHSPlayerController, Log, All);
+
 /**
  * 
  */
@@ -16,6 +18,22 @@ class HACKANDSLASH_API AHSPlayerController : public APlayerController
 	
 public:
 	AHSPlayerController();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Game, Meta = (DisplayName = "OnScoreChangedCpp"))
+	void K2_OnScoreChanged(int32 NewScore);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = Game, Meta = (DisplayName = "OnGameClearCpp"))
+	void K2_OnGameClear();
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = Game, Meta = (DisplayName = "OnGameOverCpp"))
+	void K2_OnGameOver();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Game, Meta = (DisplayName = "OnGameRetryCountCpp"))
+	void K2_OnGameRetryCount(int32 NewRetryCount);
+	
+	void GameScoreChanged(int32 NewScore);
+	void GameClear();
+	void GameOver();
 
 protected:
 	virtual void BeginPlay() override;
@@ -28,4 +46,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = HUD)
 	TObjectPtr<class UHSHUDWidget> HSHUDWidget;
 
+// Save Game Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SaveGame)
+	TObjectPtr<class UHSSaveGame> SaveGameInstance;
 };

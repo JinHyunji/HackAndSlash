@@ -7,6 +7,8 @@
 #include "Character/HSCharacterNonPlayer.h"
 #include "Engine/OverlapResult.h"
 #include "Item/HSItemBox.h"
+#include "Interface/HSGameInterface.h"
+#include "GameFramework/GameModeBase.h"
 
 // Sets default values
 AHSStageGimmick::AHSStageGimmick()
@@ -196,6 +198,16 @@ void AHSStageGimmick::SetChooseNext()
 
 void AHSStageGimmick::OnOpponentDestroyed(AActor* DestroyedActor)
 {
+	IHSGameInterface* HSGameMode = Cast<IHSGameInterface>(GetWorld()->GetAuthGameMode());
+	if (HSGameMode)
+	{
+		HSGameMode->OnPlayerScoreChanged(CurrentStageNum);
+		if (HSGameMode->IsGameCleared())
+		{
+			return;
+		}
+	}
+
 	SetState(EStageState::REWARD);
 }
 

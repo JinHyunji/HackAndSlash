@@ -3,6 +3,10 @@
 
 #include "Player/HSPlayerController.h"
 #include "UI/HSHUDWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "HSSaveGame.h"
+
+DEFINE_LOG_CATEGORY(LogHSPlayerController);
 
 AHSPlayerController::AHSPlayerController()
 {
@@ -13,6 +17,28 @@ AHSPlayerController::AHSPlayerController()
 	}
 }
 
+void AHSPlayerController::GameScoreChanged(int32 NewScore)
+{
+	K2_OnScoreChanged(NewScore);
+}
+
+void AHSPlayerController::GameClear()
+{
+	K2_OnGameClear();
+}
+
+void AHSPlayerController::GameOver()
+{
+	K2_OnGameOver();
+	
+	if (!UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("Player0"), 0))
+	{
+		UE_LOG(LogHSPlayerController, Error, TEXT("Save Game Error!"));
+	}
+
+	K2_OnGameRetryCount(SaveGameInstance->RetryCount);
+}
+
 void AHSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -21,10 +47,16 @@ void AHSPlayerController::BeginPlay()
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
 	// ======================================
-
-	HSHUDWidget = CreateWidget<UHSHUDWidget>(this, HSHUDWidgetClass);
-	if (HSHUDWidget)
+	
+	SaveGameInstance = Cast<UHSSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("Player0"), 0));
+	if (SaveGameInstance)
 	{
-		HSHUDWidget->AddToViewport();
+		SaveGameInstance->RetryCount++;
 	}
+	else
+	{
+		SaveGameInstance = NewObject<UHSSaveGame>();
+	}
+
+	K2_OnGameRetryCount(SaveGameInstance->RetryCount);
 }

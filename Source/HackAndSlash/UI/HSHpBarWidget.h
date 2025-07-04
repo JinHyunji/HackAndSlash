@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "HSUserWidget.h"
+#include "GameData/HSCharacterStat.h"
 #include "HSHpBarWidget.generated.h"
 
 /**
@@ -17,14 +18,21 @@ class HACKANDSLASH_API UHSHpBarWidget : public UHSUserWidget
 public:
 	UHSHpBarWidget(const FObjectInitializer& ObjectInitializer);
 
-	FORCEINLINE void SetMaxHp(float NewMaxHp) { MaxHp = NewMaxHp; }
+	void UpdateStat(const FHSCharacterStat& BaseStat, const FHSCharacterStat& ModifierStat);
 	void UpdateHpBar(float NewCurrentHp);
+	FString GetHpStatText();
 
 protected:
 	virtual void NativeConstruct() override;
 
 	UPROPERTY()
 	TObjectPtr<class UProgressBar> HpProgressBar;
+
+	UPROPERTY()
+	TObjectPtr<class UTextBlock> HpStat;
+
+	UPROPERTY()
+	float CurrentHp;
 
 	UPROPERTY()
 	float MaxHp;

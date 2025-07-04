@@ -15,8 +15,7 @@ UHSHUDWidget::UHSHUDWidget(const FObjectInitializer& ObjectInitializer)
 void UHSHUDWidget::UpdateStat(const FHSCharacterStat& BaseStat, const FHSCharacterStat& ModifierStat)
 {
 	FHSCharacterStat TotalStat = BaseStat + ModifierStat;
-	HpBar->SetMaxHp(TotalStat.MaxHp);
-
+	HpBar->UpdateStat(BaseStat, ModifierStat);
 	CharacterStat->UpdateStat(BaseStat, ModifierStat);
 }
 

@@ -27,6 +27,12 @@ void AHSCharacterNonPlayer::SetDead()
 {
 	Super::SetDead();
 
+	AHSAIController* HSAIController = Cast<AHSAIController>(GetController());
+	if (HSAIController)
+	{
+		HSAIController->StopAI();
+	}
+
 	FTimerHandle DeadTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(DeadTimerHandle, FTimerDelegate::CreateLambda(
 		[&]()

@@ -3,3 +3,7 @@
 
 #include "Item/HSWeaponItemData.h"
 
+UHSWeaponItemData::UHSWeaponItemData()
+{
+	Type = EItemType::Weapon;
+}

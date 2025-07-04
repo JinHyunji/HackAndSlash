@@ -12,7 +12,7 @@
 #include "CharacterStat/HSCharacterStatComponent.h"
 #include "UI/HSWidgetComponent.h"
 #include "UI/HSHpBarWidget.h"
-#include "Item/HSWeaponItemData.h"
+#include "Item/HSItems.h"
 #include "Components/SkeletalMeshComponent.h"
 
 DEFINE_LOG_CATEGORY(LogHSCharacter);
@@ -91,13 +91,13 @@ AHSCharacterBase::AHSCharacterBase()
     // Widget Component
     HpBar = CreateDefaultSubobject<UHSWidgetComponent>(TEXT("Widget"));
     HpBar->SetupAttachment(GetMesh());
-    HpBar->SetRelativeLocation(FVector(0.f, 0.f, 180.f));
+    HpBar->SetRelativeLocation(FVector(0.f, 0.f, 220.f));
     static ConstructorHelpers::FClassFinder<UUserWidget> HpBarWidgetRef(TEXT("/Game/HackAndSlash/UI/WBP_HpBar.WBP_HpBar_C"));
     if (HpBarWidgetRef.Class)
     {
         HpBar->SetWidgetClass(HpBarWidgetRef.Class);
         HpBar->SetWidgetSpace(EWidgetSpace::Screen);
-        HpBar->SetDrawSize(FVector2D(150.f, 15.f));
+        HpBar->SetDrawSize(FVector2D(170.f, 20.f));
         HpBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
 
@@ -115,6 +115,7 @@ void AHSCharacterBase::PostInitializeComponents()
     Super::PostInitializeComponents();
 
     Stat->OnHpZero.AddUObject(this, &AHSCharacterBase::SetDead);
+    Stat->OnStatChanged.AddUObject(this, &AHSCharacterBase::ApplyStat);
 }
 
 void AHSCharacterBase::SetCharacterControlData(const UHSCharacterControlData* CharacterControlData)
@@ -270,9 +271,10 @@ void AHSCharacterBase::SetupCharacterWidget(UHSUserWidget* InUserWidget)
     UHSHpBarWidget* HpBarWidget = Cast<UHSHpBarWidget>(InUserWidget);
     if (HpBarWidget)
     {
-        HpBarWidget->SetMaxHp(Stat->GetTotalStat().MaxHp);
+        HpBarWidget->UpdateStat(Stat->GetBaseStat(), Stat->GetModifierStat());
         HpBarWidget->UpdateHpBar(Stat->GetCurrentHp());
         Stat->OnHpChanged.AddUObject(HpBarWidget, &UHSHpBarWidget::UpdateHpBar);
+        Stat->OnStatChanged.AddUObject(HpBarWidget, &UHSHpBarWidget::UpdateStat);
     }
 }
 
@@ -287,7 +289,11 @@ void AHSCharacterBase::TakeItem(UHSItemData* InItemData)
 
 void AHSCharacterBase::DrinkPotion(UHSItemData* InItemData)
 {
-    UE_LOG(LogHSCharacter, Log, TEXT("Drink Potion"));
+    UHSPotionItemData* PotionItemData = Cast<UHSPotionItemData>(InItemData);
+    if (PotionItemData)
+    {
+        Stat->HealHp(PotionItemData->HealAmount);
+    }
 }
 
 void AHSCharacterBase::EquipWeapon(UHSItemData* InItemData)
@@ -307,7 +313,11 @@ void AHSCharacterBase::EquipWeapon(UHSItemData* InItemData)
 
 void AHSCharacterBase::ReadScroll(UHSItemData* InItemData)
 {
-    UE_LOG(LogHSCharacter, Log, TEXT("Read Scroll"));
+    UHSScrollItemData* ScrollItemData = Cast<UHSScrollItemData>(InItemData);
+    if (ScrollItemData)
+    {
+        Stat->AddBaseStat(ScrollItemData->BaseStat);
+    }
 }
 
 int32 AHSCharacterBase::GetLevel()
@@ -318,4 +328,10 @@ int32 AHSCharacterBase::GetLevel()
 void AHSCharacterBase::SetLevel(int32 InNewLevel)
 {
     Stat->SetLevelStat(InNewLevel);
+}
+
+void AHSCharacterBase::ApplyStat(const FHSCharacterStat& BaseStat, const FHSCharacterStat& ModifierStat)
+{
+    float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
+    GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
 }

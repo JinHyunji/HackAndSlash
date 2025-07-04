@@ -5,18 +5,18 @@
 #include "CoreMinimal.h"
 #include "Item/HSItemData.h"
 #include "GameData/HSCharacterStat.h"
-#include "HSWeaponItemData.generated.h"
+#include "HSPotionItemData.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class HACKANDSLASH_API UHSWeaponItemData : public UHSItemData
+class HACKANDSLASH_API UHSPotionItemData : public UHSItemData
 {
 	GENERATED_BODY()
 
 public:
-	UHSWeaponItemData();
+	UHSPotionItemData();
 
 	FPrimaryAssetId GetPrimaryAssetId() const override
 	{
@@ -24,9 +24,8 @@ public:
 	}
 	
 public:
-	UPROPERTY(EditAnywhere, Category = Weapon)
-	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
+	UPROPERTY(EditAnywhere, Category = Hp)
+	float HealAmount;
 
-	UPROPERTY(EditAnywhere, Category = Weapon)
-	FHSCharacterStat ModifierStat;
+
 };
