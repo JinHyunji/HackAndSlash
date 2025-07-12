@@ -26,7 +26,7 @@ AHSItemBox::AHSItemBox()
     Trigger->SetCollisionProfileName(CPROFILE_HSTRIGGER);
     Trigger->SetBoxExtent(FVector(40.f, 42.f, 30.f));
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> BoxMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/HackAndSlash/Environment/Props/SM_Env_Breakables_Box1.SM_Env_Breakables_Box1'"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> BoxMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/HackAndSlash/Environment/Props/SM_Chest_2_SSize.SM_Chest_2_SSize'"));
     if (BoxMeshRef.Object)
     {
         Mesh->SetStaticMesh(BoxMeshRef.Object);
